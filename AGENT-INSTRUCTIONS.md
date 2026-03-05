@@ -486,25 +486,29 @@ if !subscriptionService.isPro {
 
 ## ШАГ 11 — FIREBASE DEPENDENCIES
 
+> **ВАЖНО**: Firebase добавляется ТОЛЬКО в R2. В R1 его нет совсем (нет GoogleService-Info.plist, нет FirebaseApp.configure()).
+
 Проверить наличие Firebase:
 ```bash
-grep -r "Firebase" {APP_FOLDER}/project.yml 2>/dev/null
+grep -r "firebase" {APP_FOLDER}/project.yml 2>/dev/null
 grep -r "Firebase" {APP_FOLDER}/Package.swift 2>/dev/null
 ```
 
-Если нет — добавить в `project.yml`:
+Если Firebase уже есть в project.yml — пропустить (только запустить xcodegen если изменяли).
+
+Если нет — добавить в `project.yml` (точная версия 11.6.0, ключ `firebase-ios-sdk`):
 ```yaml
 packages:
-  FirebaseSDK:
+  firebase-ios-sdk:
     url: https://github.com/firebase/firebase-ios-sdk
-    from: 11.0.0
+    version: 11.6.0          # ← точная версия, не "from:"
 
 targets:
   {APP_SCHEME}:
     dependencies:
-      - package: FirebaseSDK
+      - package: firebase-ios-sdk
         product: FirebaseAnalytics
-      - package: FirebaseSDK
+      - package: firebase-ios-sdk
         product: FirebaseRemoteConfig
 ```
 
@@ -512,6 +516,10 @@ targets:
 ```bash
 cd {APP_FOLDER} && xcodegen generate
 ```
+
+Добавить `GoogleService-Info.plist` (получить из Firebase Console → iOS app):
+- Положить в `{APP_FOLDER}/{APP_SCHEME}/GoogleService-Info.plist`
+- Проверить что файл есть в `.gitignore` (там должно быть `GoogleService-Info.plist`)
 
 ---
 
@@ -556,9 +564,20 @@ Remote Config:
 • Дефолт: 5 (секунды до крестика)
 • 0 = крестик сразу | -1 = никогда
 
+Firebase:
+1. Получить GoogleService-Info.plist из Firebase Console → добавить в target
+2. Добавить Remote Config ключ "{REMOTE_CONFIG_KEY}" (Number, default: 5)
+
 ASC:
-1. Создать подписки: {WEEKLY_PRODUCT_ID} + {YEARLY_PRODUCT_ID}
+1. Создать группу подписок → {WEEKLY_PRODUCT_ID} + {YEARLY_PRODUCT_ID}
 2. Загрузить билд через Xcode Organizer
+3. Subscriptions → Add to Build
+
+⚡ In-App Event (R2 нельзя отправлять без него!):
+• Создать в ASC UI, badge=MAJOR_UPDATE, priority=HIGH
+• Start через 2-3 часа после сабмита, duration 4 дня
+• Отправить на ревью ОДНОВРЕМЕННО с версией
+• Без ивента — общая очередь (3-7 дней), с ивентом — Fast Track (24-48 часов)
 ```
 
 ---
